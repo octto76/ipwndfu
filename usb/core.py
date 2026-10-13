@@ -299,7 +299,7 @@ class Endpoint(object):
     >>> for cfg in dev:
     >>>     for i in cfg:
     >>>         for e in i:
-    >>>             print e.bEndpointAddress
+    >>>             print(e.bEndpointAddress)
     """
 
     def __init__(self, device, endpoint, interface = 0,
@@ -428,7 +428,7 @@ class Interface(object):
     >>> dev = usb.core.find()
     >>> for cfg in dev:
     >>>     for i in cfg:
-    >>>         print i.bInterfaceNumber
+    >>>         print(i.bInterfaceNumber)
     """
 
     def __init__(self, device, interface = 0,
@@ -564,7 +564,7 @@ class Configuration(object):
     >>> import usb.core
     >>> dev = usb.core.find()
     >>> for cfg in dev:
-    >>>     print cfg.bConfigurationValue
+    >>>     print(cfg.bConfigurationValue)
     """
 
     def __init__(self, device, configuration = 0):
