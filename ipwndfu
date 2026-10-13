@@ -1,8 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # ipwndfu: open-source jailbreaking tool for older iOS devices
 # Author: axi0mX
-
-from __future__ import print_function
 
 import binascii, datetime, getopt, hashlib, struct, sys, time
 import dfu, nor, utilities
@@ -13,6 +11,7 @@ def print_help():
     print('USAGE: ipwndfu [options]')
     print('Interact with an iOS device in DFU Mode.\n')
     print('Basic options:')
+    print('  -h, --help\t\t\tshow this help message')
     print('  -p\t\t\t\tUSB exploit for pwned DFU Mode')
     print('  -x\t\t\t\tinstall alloc8 exploit to NOR')
     print('  -f file\t\t\tsend file to device in DFU Mode')
@@ -34,12 +33,16 @@ def print_help():
 
 if __name__ == '__main__':
     try:
-        advanced = ['demote', 'boot', 'dump=', 'hexdump=', 'dump-rom', 'dump-nor=', 'flash-nor=', '24kpwn', 'remove-24kpwn', 'remove-alloc8', 'decrypt-gid=', 'encrypt-gid=', 'decrypt-uid=', 'encrypt-uid=']
-        opts, args = getopt.getopt(sys.argv[1:], 'pxf:', advanced)
+        advanced = ['help', 'demote', 'boot', 'dump=', 'hexdump=', 'dump-rom', 'dump-nor=', 'flash-nor=', '24kpwn', 'remove-24kpwn', 'remove-alloc8', 'decrypt-gid=', 'encrypt-gid=', 'decrypt-uid=', 'encrypt-uid=']
+        opts, args = getopt.getopt(sys.argv[1:], 'hpxf:', advanced)
     except getopt.GetoptError:
         print('ERROR: Invalid arguments provided.')
         print_help()
         sys.exit(2)
+
+    if any(opt in ('-h', '--help') for opt, arg in opts):
+        print_help()
+        sys.exit(0)
 
     if len(opts) == 0:
         print_help()
@@ -93,7 +96,7 @@ if __name__ == '__main__':
 
             if device.config.version == '359.3':
                 print('WARNING: iPhone 3GS (old bootrom) was detected. Use 24Kpwn exploit for faster boots, alloc8 exploit is for testing purposes only.')
-                raw_input("Press ENTER to continue.")
+                input("Press ENTER to continue.")
 
             print('Installing alloc8 exploit to NOR.')
 
@@ -102,7 +105,7 @@ if __name__ == '__main__':
             nor = nor.NorData(dump)
 
             for byte in nor.parts[1]:
-                if byte != '\x00':
+                if byte != 0:
                     print('ERROR: Bytes following IMG2 header in NOR are not zero. alloc8 exploit was likely previously installed. Exiting.')
                     sys.exit(1)
             if len(nor.images) == 0 or len(nor.images[0]) < 0x24000:
@@ -167,10 +170,10 @@ if __name__ == '__main__':
 
             if 'PWND:[checkm8]' in serial_number:
                 device = usbexec.PwnedUSBDevice()
-                sys.stdout.write(device.read_memory(address, length))
+                sys.stdout.buffer.write(device.read_memory(address, length))
             else:
                 device = PwnedDFUDevice()
-                print(device.read_memory(address, length))
+                sys.stdout.buffer.write(device.read_memory(address, length) + b'\n')
 
         if opt == '--hexdump':
             if arg.count(',') != 1:
@@ -207,9 +210,9 @@ if __name__ == '__main__':
                     print(hashlib.sha1(securerom).hexdigest())
                     print('ERROR: SecureROM was dumped, but the SHA1 hash does not match. Exiting.')
                     sys.exit(1)
-                chip    = securerom[0x200:0x240].split(' ')[2][:-1]
-                kind    = securerom[0x240:0x280].split('\0')[0]
-                version = securerom[0x280:0x2C0].split('\0')[0][6:]
+                chip    = securerom[0x200:0x240].decode('ascii').split(' ')[2][:-1]
+                kind    = securerom[0x240:0x280].split(b'\0')[0].decode('ascii')
+                version = securerom[0x280:0x2C0].split(b'\0')[0].decode('ascii')[6:]
                 filename = 'SecureROM-%s-%s-%s.dump' % (chip, version, kind)
                 with open(filename, 'wb') as f:
                     f.write(securerom)
@@ -239,7 +242,7 @@ if __name__ == '__main__':
             f = open(arg, 'rb')
             new_nor = f.read()
             f.close()
-            if new_nor[:4] != 'IMG2'[::-1]:
+            if new_nor[:4] != b'IMG2'[::-1]:
                 print('ERROR: Bad IMG2 header magic. This is not a valid NOR. Exiting.')
                 sys.exit(1)
 
@@ -263,7 +266,7 @@ if __name__ == '__main__':
             print('Preparing modified NOR with 24Kpwn exploit.')
             nor = nor.NorData(dump)
             for byte in nor.parts[1]:
-                if byte != '\x00':
+                if byte != 0:
                     print('ERROR: Bytes following IMG2 header in NOR are not zero. alloc8 exploit was likely previously installed. Exiting.')
                     sys.exit(1)
             if len(nor.images) == 0:
@@ -283,7 +286,7 @@ if __name__ == '__main__':
                 sys.exit(1)
 
             print('WARNING: This feature is for researchers only. Device will probably not boot into iOS until it is restored in iTunes.')
-            raw_input("Press ENTER to continue.")
+            input("Press ENTER to continue.")
 
             dump = device.nor_dump(saveBackup=True)
 
@@ -307,7 +310,7 @@ if __name__ == '__main__':
                 sys.exit(1)
 
             print('WARNING: This feature is for researchers only. Device will probably not boot into iOS until it is restored in iTunes.')
-            raw_input("Press ENTER to continue.")
+            input("Press ENTER to continue.")
 
             dump = device.nor_dump(saveBackup=True)
 
@@ -329,7 +332,7 @@ if __name__ == '__main__':
             if 'PWND:[checkm8]' in serial_number:
                 pwned = usbexec.PwnedUSBDevice()
                 print('Decrypting with %s GID key.' % pwned.platform.name())
-                print(pwned.aes(arg.decode('hex'), usbexec.AES_DECRYPT, usbexec.AES_GID_KEY).encode('hex'))
+                print(pwned.aes(bytes.fromhex(arg), usbexec.AES_DECRYPT, usbexec.AES_GID_KEY).hex())
             else:
                 device = PwnedDFUDevice()
                 print('Decrypting with S5L%s GID key.' % device.config.cpid)
@@ -343,7 +346,7 @@ if __name__ == '__main__':
             if 'PWND:[checkm8]' in serial_number:
                 pwned = usbexec.PwnedUSBDevice()
                 print('Encrypting with %s GID key.' % pwned.platform.name())
-                print(pwned.aes(arg.decode('hex'), usbexec.AES_ENCRYPT, usbexec.AES_GID_KEY).encode('hex'))
+                print(pwned.aes(bytes.fromhex(arg), usbexec.AES_ENCRYPT, usbexec.AES_GID_KEY).hex())
             else:
                 device = PwnedDFUDevice()
                 print('Encrypting with S5L%s GID key.' % device.config.cpid)
@@ -357,7 +360,7 @@ if __name__ == '__main__':
             if 'PWND:[checkm8]' in serial_number:
                 pwned = usbexec.PwnedUSBDevice()
                 print('Decrypting with %s device-specific UID key.' % pwned.platform.name())
-                print(pwned.aes(arg.decode('hex'), usbexec.AES_DECRYPT, usbexec.AES_UID_KEY).encode('hex'))
+                print(pwned.aes(bytes.fromhex(arg), usbexec.AES_DECRYPT, usbexec.AES_UID_KEY).hex())
             else:
                 device = PwnedDFUDevice()
                 print('Decrypting with device-specific UID key.')
@@ -371,7 +374,7 @@ if __name__ == '__main__':
             if 'PWND:[checkm8]' in serial_number:
                 pwned = usbexec.PwnedUSBDevice()
                 print('Encrypting with %s device-specific UID key.' % pwned.platform.name())
-                print(pwned.aes(arg.decode('hex'), usbexec.AES_ENCRYPT, usbexec.AES_UID_KEY).encode('hex'))
+                print(pwned.aes(bytes.fromhex(arg), usbexec.AES_ENCRYPT, usbexec.AES_UID_KEY).hex())
             else:
                 device = PwnedDFUDevice()
                 print('Encrypting with device-specific UID key.')
@@ -412,9 +415,9 @@ if __name__ == '__main__':
                 print('Heap repaired.')
 
                 device.write_memory(TRAMPOLINE, checkm8.asm_arm64_branch(TRAMPOLINE, TRAMPOLINE + 0x400))
-                device.write_memory(TRAMPOLINE + 0x400, open('bin/t8015_shellcode_arm64.bin').read())
+                device.write_memory(TRAMPOLINE + 0x400, open('bin/t8015_shellcode_arm64.bin', 'rb').read())
 
                 device.write_memory_ptr(BOOTSTRAP_TASK_LR, NAND_BOOT_JUMP)
-                device.write_memory(DFU_BOOL, '\x01')
+                device.write_memory(DFU_BOOL, b'\x01')
                 device.execute(0, DFU_NOTIFY, DFU_STATE)
                 print('Booted.')

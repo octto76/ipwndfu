@@ -62,8 +62,31 @@ provided in `nop_image4.py`, which was based on LinusHenze's `rmsigchks.py`.
 
 This tool should be compatible with Mac and Linux. It won't work in a virtual machine.
 
+* Python 3.11 or newer. Python 2 is no longer supported.
 * libusb, `If you are using Linux: install libusb using your package manager.`
 * [iPhone 3GS iOS 4.3.5 iBSS](#ibss)
+
+Run the commands from this repository's root directory using Python 3:
+
+```sh
+python3 ipwndfu --help
+python3 ipwnrecovery --help
+python3 ibootpatcher --help
+```
+
+The bundled USB library is included; a separate PyUSB installation is not
+required. On current macOS versions, install libusb with your package manager.
+Library discovery uses the installed library when no bundled macOS bottle
+matches the host.
+
+Binary APIs accept and return `bytes`. Recovery command strings and console
+output use `str`; AES hex helpers return printable hexadecimal strings.
+
+Run the Python compatibility tests without a connected device:
+
+```sh
+python3 -m unittest discover -s tests -v
+```
 
 
 ## Tutorial

@@ -1,10 +1,8 @@
-from __future__ import print_function
-
 import binascii, datetime, hashlib, struct, sys, time
 import usb # pyusb: use 'pip install pyusb' to install this module
 import dfu, recovery, image3, image3_24Kpwn, utilities
 
-EXEC_MAGIC = 'exec'[::-1]
+EXEC_MAGIC = b'exec'[::-1]
 AES_BLOCK_SIZE = 16
 AES_GID_KEY = 0x20000200
 AES_UID_KEY = 0x20000201
@@ -143,7 +141,7 @@ class PwnedDFUDevice():
         assert self.identifier == device.serial_number
 
         requiredLength = 0x8 + receiveLength
-        requiredLength = requiredLength if requiredLength % 0x800 == 0 else requiredLength / 0x800 * 0x800 + 0x800
+        requiredLength = requiredLength if requiredLength % 0x800 == 0 else requiredLength // 0x800 * 0x800 + 0x800
         received = dfu.get_data(device, requiredLength)
         dfu.release_device(device)
 
@@ -172,7 +170,7 @@ class PwnedDFUDevice():
             print('ERROR: Length of hex data for AES encryption/decryption must be a multiple of %s.' % (2 * AES_BLOCK_SIZE))
             sys.exit(1)
 
-        return binascii.hexlify(self.aes(binascii.unhexlify(hexdata), action, key))
+        return self.aes(bytes.fromhex(hexdata), action, key).hex()
 
     def read_memory(self, address, length):
         (retval, data) = self.execute(struct.pack('<4I', self.config.memmove, self.config.load_address + 8, address, length), length)
@@ -183,7 +181,7 @@ class PwnedDFUDevice():
         return data
 
     def nor_dump(self, saveBackup):
-        (bdev, empty) = self.execute(struct.pack('<2I5s', self.config.get_block_device, self.config.load_address + 12, 'nor0\x00'), 0)
+        (bdev, empty) = self.execute(struct.pack('<2I5s', self.config.get_block_device, self.config.load_address + 12, b'nor0\x00'), 0)
         if bdev == 0:
             print('ERROR: Unable to dump NOR. Pointer to nor0 block device was NULL.')
             sys.exit(1)
@@ -196,7 +194,7 @@ class PwnedDFUDevice():
 
         NOR_PART_SIZE = 0x20000
         NOR_PARTS = 8
-        nor = str()
+        nor = b''
         for i in range(NOR_PARTS):
             print('Dumping NOR, part %s/%s.' % (i+1, NOR_PARTS))
             (retval, received) = self.execute(struct.pack('<6I', read, bdev, self.config.load_address + 8, i * NOR_PART_SIZE, 0, NOR_PART_SIZE), NOR_PART_SIZE)
@@ -243,7 +241,7 @@ class PwnedDFUDevice():
         iBSS = image3.Image3(data)
         decryptediBSS = iBSS.newImage3(decrypted=True)
         n88ap_iBSS_435_patches = [
-            (0x14954,                     'run\x00'), # patch 'reset' command string to 'run'
+            (0x14954,                     b'run\x00'), # patch 'reset' command string to 'run'
             (0x17654, struct.pack('<I', 0x41000001)), # patch 'reset' command handler to LOAD_ADDRESS + 1
         ]
         patchediBSS = decryptediBSS[:64] + utilities.apply_patches(decryptediBSS[64:], n88ap_iBSS_435_patches)
@@ -274,7 +272,7 @@ class PwnedDFUDevice():
         MAX_SHELLCODE_LENGTH = 128
         payload = open('bin/ibss-flash-nor-shellcode.bin', 'rb').read()
         assert len(payload) <= MAX_SHELLCODE_LENGTH
-        payload += '\x00' * (MAX_SHELLCODE_LENGTH - len(payload)) + nor
+        payload += b'\x00' * (MAX_SHELLCODE_LENGTH - len(payload)) + nor
 
         device = recovery.acquire_device()
         assert 'CPID:8920' in device.serial_number
@@ -299,8 +297,8 @@ class PwnedDFUDevice():
             data = f.read()
             f.close()
         except IOError:
-            data = str()
-        assert len(data) % 2 * KEYBAG_LENGTH == 0
+            data = b''
+        assert len(data) % (2 * KEYBAG_LENGTH) == 0
 
         for i in range(0, len(data), 2 * KEYBAG_LENGTH):
             if keybag == data[i:i+KEYBAG_LENGTH]:
@@ -309,7 +307,7 @@ class PwnedDFUDevice():
         device = PwnedDFUDevice()
         decrypted_keybag = device.aes(keybag, AES_DECRYPT, AES_GID_KEY)
 
-        f = open(KEYBAG_FILENAME, 'a')
+        f = open(KEYBAG_FILENAME, 'ab')
         f.write(keybag + decrypted_keybag)
         f.close()
 

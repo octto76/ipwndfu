@@ -18,9 +18,10 @@ doc strings and can therefore be manipulated by tools such as pydoc.
 You can also find a tutorial at:
 https://github.com/walac/pyusb/blob/master/docs/tutorial.rst.
 
-PyUSB is being developed and tested on Linux and Windows, but it should work
-fine on any platform running Python >= 2.4, ctypes and at least one of the
-builtin backends.
+This bundled copy has been updated for Python 3.11 and newer. It uses ctypes
+and requires at least one of the builtin backends. The remaining installation
+notes below describe the original upstream distribution; ipwndfu uses the
+copy already included in this repository.
 
 PyUSB supports libusb 0.1, libusb 1.0 and OpenUSB, but the user does not need
 to worry about that, unless in some corner cases.

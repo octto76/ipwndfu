@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import sys, time
 import usb # pyusb: use 'pip install pyusb' to install this module
 import usb.backend.libusb1
@@ -8,7 +6,7 @@ import libusbfinder
 MAX_PACKET_SIZE = 0x800
 
 def acquire_device(timeout=5.0, match=None, fatal=True):
-  backend = usb.backend.libusb1.get_backend(find_library=lambda x:libusbfinder.libusb1_path())
+  backend = usb.backend.libusb1.get_backend(find_library=libusbfinder.find_library)
   #print('Acquiring device handle.')
   # Keep retrying for up to timeout seconds if device is not found.
   start = time.time()
@@ -52,18 +50,18 @@ def send_data(device, data):
 
 def get_data(device, amount):
     #print('Getting 0x%x of data from device.' % amount)
-    data = str()
+    data = b''
     while amount > 0:
         part = min(amount, MAX_PACKET_SIZE)
         ret = device.ctrl_transfer(0xA1, 2, 0, 0, part, 5000)
         assert len(ret) == part
-        data += ret.tostring()
+        data += ret.tobytes()
         amount -= part
     return data
 
 def request_image_validation(device):
     #print('Requesting image validation.')
-    assert device.ctrl_transfer(0x21, 1, 0, 0, '', 1000) == 0
+    assert device.ctrl_transfer(0x21, 1, 0, 0, b'', 1000) == 0
     device.ctrl_transfer(0xA1, 3, 0, 0, 6, 1000)
     device.ctrl_transfer(0xA1, 3, 0, 0, 6, 1000)
     device.ctrl_transfer(0xA1, 3, 0, 0, 6, 1000)

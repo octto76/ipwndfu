@@ -26,73 +26,27 @@
 # NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR
 # MODIFICATIONS.
 
-# All the hacks necessary to assure compatibility across all
-# supported versions come here.
-# Please, note that there is one version check for each
-# hack we need to do, this makes maintenance easier... ^^
+"""Helpers shared by the bundled USB library on Python 3."""
 
-import sys
 import array
+from functools import reduce as _reduce, update_wrapper as _update_wrapper
 
-__all__ = ['_reduce', '_set', '_next', '_update_wrapper']
+__all__ = ['_reduce', '_all', '_set', '_next', '_update_wrapper', 'as_array']
 
-# we support Python >= 2.4
-assert sys.hexversion >= 0x020400f0
+_all = all
+_set = set
+_next = next
 
-# On Python 3, reduce became a functools module function
-try:
-    import functools
-    _reduce = functools.reduce
-except (ImportError, AttributeError):
-    _reduce = reduce
 
-# all, introduced in Python 2.5
-try:
-    _all = all
-except NameError:
-    _all = lambda iter_ : _reduce( lambda x, y: x and y, iter_, True )
-
-# we only have the builtin set type since 2.5 version
-try:
-    _set = set
-except NameError:
-    import sets
-    _set = sets.Set
-
-# On Python >= 2.6, we have the builtin next() function
-# On Python 2.5 and before, we have to call the iterator method next()
-def _next(iter):
-    try:
-        return next(iter)
-    except NameError:
-        return iter.next()
-
-# functools appeared in 2.5
-try:
-    import functools
-    _update_wrapper = functools.update_wrapper
-except (ImportError, AttributeError):
-    def _update_wrapper(wrapper, wrapped):
-        wrapper.__name__ = wrapped.__name__
-        wrapper.__module__ = wrapped.__module__
-        wrapper.__doc__ = wrapped.__doc__
-        wrapper.__dict__ = wrapped.__dict__
-
-# this is used (as of May 2015) twice in core, once in backend/openusb, and in
-# some unit test code. It would probably be clearer if written in terms of some
-# definite 3.2+ API (bytearrays?) with a fallback provided for 2.4+.
 def as_array(data=None):
     if data is None:
         return array.array('B')
-
     if isinstance(data, array.array):
         return data
-
-    try:
-        return array.array('B', data)
-    except TypeError:
-        # When you pass a unicode string or a character sequence,
-        # you get a TypeError if the first parameter does not match
-        a = array.array('B')
-        a.fromstring(data) # deprecated since 3.2
-        return a
+    if isinstance(data, str):
+        raise TypeError('USB transfer data must be bytes; encode text explicitly')
+    if isinstance(data, (bytes, bytearray, memoryview)):
+        result = array.array('B')
+        result.frombytes(bytes(data))
+        return result
+    return array.array('B', data)

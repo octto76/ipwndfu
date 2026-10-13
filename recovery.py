@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import sys, time
 import usb # pyusb: use 'pip install pyusb' to install this module
 import usb.backend.libusb1
@@ -8,7 +6,7 @@ import libusbfinder
 MAX_PACKET_SIZE = 0x4000
 
 def acquire_device(timeout=10):
-    backend = usb.backend.libusb1.get_backend(find_library=lambda x:libusbfinder.libusb1_path())
+    backend = usb.backend.libusb1.get_backend(find_library=libusbfinder.find_library)
     #print('Acquiring device handle', end=' ')
     start = time.time()
     # Keep retrying for up to timeout seconds if device is not found.
@@ -27,7 +25,7 @@ def release_device(device):
 
 def send_command(device, command):
     # TODO: Add assert?
-    device.ctrl_transfer(0x40, 0, 0, 0, command + '\x00', 30000)
+    device.ctrl_transfer(0x40, 0, 0, 0, command.encode('utf-8') + b'\x00', 30000)
 
 def send_data(device, data):
     #print('Sending 0x%x of data to device.' % len(data))

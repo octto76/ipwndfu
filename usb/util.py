@@ -47,7 +47,6 @@ __author__ = 'Wander Lairson Costa'
 
 import operator
 import array
-from sys import hexversion
 import usb._interop as _interop
 
 # descriptor type
@@ -88,8 +87,7 @@ _ENDPOINT_DIR_MASK = 0x80
 _ENDPOINT_TRANSFER_TYPE_MASK = 0x03
 _CTRL_DIR_MASK = 0x80
 
-# For compatibility between Python 2 and 3
-_dummy_s = '\x00'.encode('utf-8')
+_dummy_s = b'\x00'
 
 # speed type
 SPEED_LOW = 1
@@ -324,7 +322,4 @@ def get_string(dev, index, langid = None):
                 index,
                 langid
             )
-    if hexversion >= 0x03020000:
-        return buf[2:buf[0]].tobytes().decode('utf-16-le')
-    else:
-        return buf[2:buf[0]].tostring().decode('utf-16-le')
+    return buf[2:buf[0]].tobytes().decode('utf-16-le')

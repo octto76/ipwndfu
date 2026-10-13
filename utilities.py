@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import subprocess, sys
 
 def apply_patches(binary, patches):
@@ -8,6 +6,10 @@ def apply_patches(binary, patches):
     return binary
 
 def aes_decrypt(data, iv, key):
+  if isinstance(iv, bytes):
+    iv = iv.decode('ascii')
+  if isinstance(key, bytes):
+    key = key.decode('ascii')
   if len(key) == 32:
     aes = 128
   elif len(key) == 64:
@@ -23,7 +25,7 @@ def aes_decrypt(data, iv, key):
   (stdout, stderr) = p.communicate(input=data)
 
   if p.returncode != 0 or len(stderr) > 0:
-    print('ERROR: openssl failed: %s' % stderr)
+    print('ERROR: openssl failed: %s' % stderr.decode('utf-8', errors='replace'))
     sys.exit(1)
 
   return stdout
@@ -33,7 +35,7 @@ def hex_dump(data, address):
   (stdout, stderr) = p.communicate(input=data)
 
   if p.returncode != 0 or len(stderr) > 0:
-    print('ERROR: xxd failed: %s' % stderr)
+    print('ERROR: xxd failed: %s' % stderr.decode('utf-8', errors='replace'))
     sys.exit(1)
 
-  return stdout
+  return stdout.decode('ascii')

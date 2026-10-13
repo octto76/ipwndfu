@@ -1,8 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # ipwnrecovery: open-source jailbreaking tool for older iOS devices
 # Author: axi0mX
-
-from __future__ import print_function
 
 import getopt, sys
 import usb # pyusb: use 'pip install pyusb' to install this module
@@ -12,6 +10,7 @@ def print_help():
     print('USAGE: ipwnrecovery [options]')
     print('Interact with an iOS device in Recovery Mode.\n')
     print('Basic options:')
+    print('  -h, --help\t\t\tshow this help message')
     print('  -c cmd\t\t\trun command on device')
     print('  -f file\t\t\tsend file to device in Recovery Mode')
     print('Advanced options:')
@@ -20,12 +19,16 @@ def print_help():
 
 if __name__ == '__main__':
     try:
-        advanced = ['exit-recovery-loop', 'enable-uart']
-        opts, args = getopt.getopt(sys.argv[1:], 'c:f:', advanced)
+        advanced = ['help', 'exit-recovery-loop', 'enable-uart']
+        opts, args = getopt.getopt(sys.argv[1:], 'hc:f:', advanced)
     except getopt.GetoptError:
         print('ERROR: Invalid arguments provided.')
         print_help()
         sys.exit(2)
+
+    if any(opt in ('-h', '--help') for opt, arg in opts):
+        print_help()
+        sys.exit(0)
 
     if len(opts) == 0:
         print_help()

